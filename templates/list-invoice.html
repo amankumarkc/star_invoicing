@@ -13,6 +13,7 @@
         <th scope="col">#</th>
         <th scope="col">Customer Name</th>
         <th scope="col">Payable Amount</th>
+        <th scope="col">ARN</th>
         <th scope="col">Actions</th>
       </tr>
     </thead>
@@ -22,12 +23,16 @@
             <th scope="row">{{ invoice.invoice_id }}</th>
             <td>{{ invoice.customer.full_name }}</td>
             <td>₹{{ invoice.payable_amount }}</td>
+            <td>{% if invoice.gov_arn %}{{ invoice.gov_arn }}{% else %}<span class="text-muted">Pending</span>{% endif %}</td>
             <td>
                 <a href="/invoices/edit/{{ invoice.invoice_id }}" class="btn btn-sm btn-warning">✏️ Edit</a>
                 <form action="/invoices/delete/{{ invoice.invoice_id }}" method="post" style="display:inline;">
                     <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">🗑️ Delete</button>
                 </form>
                 <a href="/download/{{ invoice.invoice_id }}" class="btn btn-sm btn-info">📥 Download Invoice</a>
+                <!-- {% if not invoice.gov_arn %}
+                    <a href="/invoices/generate-arn/{{ invoice.invoice_id }}" class="btn btn-sm btn-primary">🔄 Generate ARN</a>
+                {% endif %} -->
             </td>
         </tr>
         {% endfor %}

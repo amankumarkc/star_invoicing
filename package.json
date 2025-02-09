@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@knadh/autocomp": "^1.1.0"
+  }
+}
