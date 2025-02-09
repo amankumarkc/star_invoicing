@@ -2,23 +2,18 @@
 
 {% block body %}
 
-<div class="d-flex justify-content-between">
+<div class="d-flex justify-content-between align-items-center mb-3">
     <h3>Invoices</h3>
-    <a class="btn btn-primary" href="/new-invoice">+ New</a>
+    <a class="btn btn-success" href="/new-invoice">➕ New Invoice</a>
 </div>
 
-<ol>
-    
-</ol>
-
-
-<table class="table">
-    <thead>
+<table class="table table-striped table-bordered">
+    <thead class="thead-dark">
       <tr>
         <th scope="col">#</th>
         <th scope="col">Customer Name</th>
         <th scope="col">Payable Amount</th>
-        <th scope="col"></th>
+        <th scope="col">Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -27,11 +22,16 @@
             <th scope="row">{{ invoice.invoice_id }}</th>
             <td>{{ invoice.customer.full_name }}</td>
             <td>₹{{ invoice.payable_amount }}</td>
-            <td>⬇️</td>
+            <td>
+                <a href="/invoices/edit/{{ invoice.invoice_id }}" class="btn btn-sm btn-warning">✏️ Edit</a>
+                <form action="/invoices/delete/{{ invoice.invoice_id }}" method="post" style="display:inline;">
+                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">🗑️ Delete</button>
+                </form>
+                <a href="/download/{{ invoice.invoice_id }}" class="btn btn-sm btn-info">📥 Download Invoice</a>
+            </td>
         </tr>
-    {% endfor %}
-      
+        {% endfor %}
     </tbody>
-  </table>
+</table>
 
 {% endblock %}

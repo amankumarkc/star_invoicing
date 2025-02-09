@@ -22,7 +22,7 @@
         <thead>
         <tr>
             <th scope="col">Item Name</th>
-            <th scope="col">Price</th>
+            <th scope="col">Rate</th>
             <th scope="col">Qty</th>
             <th scope="col">Total Amount</th>
             <th scope="col"></th>
@@ -76,8 +76,8 @@
 
 
             <div class="mb-3">
-                <label for="price" class="form-label">Price</label>
-                <input required type="number" name="price" class="form-control" id="price">
+                <label for="rate" class="form-label">Rate</label>
+                <input required type="number" name="rate" class="form-control" id="rate">
             </div>
 
             <div class="mb-3">
@@ -119,8 +119,8 @@
         invoiceItems.push({
             item_name: formData.get("item_name"),
             qty: formData.get("qty"),
-            price: formData.get("price"),
-            amount: formData.get("qty") * formData.get("price")
+            rate: formData.get("rate"),
+            amount: formData.get("qty") * formData.get("rate")
         })
 
         const itemsContainer = document.getElementById("itemsContainer")
@@ -129,7 +129,7 @@
             rowsHTML += `
                 <tr>
                 <td>${item.item_name}</td>
-                <td>${item.price}</td>
+                <td>${item.rate}</td>
                 <td>${item.qty}</td>
                 <td>${item.amount}</td>
                 </tr>
