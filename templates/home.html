@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="container mt-4">
+    <div class="jumbotron text-center bg-primary text-white p-4 rounded">
+        <h1 class="display-4">📜 Invoice Management System</h1>
+        <p class="lead">Effortlessly create, manage, and download invoices with ease.</p>
+        <hr class="my-4">
+        <div class="d-flex justify-content-center">
+            <a href="/new-invoice" class="btn btn-success mx-2">➕ Create Invoice</a>
+            <a href="/invoices" class="btn btn-outline-light mx-2">📄 View Invoices</a>
+            <a href="/customers" class="btn btn-warning mx-2">👥 Manage Customers</a>
+        </div>
+    </div>
+
+    <h3 class="mt-4">📌 Recent Invoices</h3>
+    <div class="card shadow p-3">
+        <table class="table table-striped">
+            <thead class="thead-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Customer</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invoice in recent_invoices %}
+                <tr>
+                    <td>{{ invoice.invoice_id }}</td>
+                    <td>{{ invoice.customer.full_name }}</td>
+                    <td>₹{{ invoice.payable_amount }}</td>
+                    <td>{{ invoice.date }}</td>
+                    <td>
+                        <a href="/download/{{ invoice.invoice_id }}" class="btn btn-sm btn-info">📥 Download</a>
+                        <a href="/invoices/edit/{{ invoice.invoice_id }}" class="btn btn-sm btn-warning">✏️ Edit</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

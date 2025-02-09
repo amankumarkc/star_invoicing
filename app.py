@@ -25,8 +25,10 @@ db.create_tables([Customer, Invoice, InvoiceItem])
 
 # Root route define kiya jo "Home Page" return karega
 @app.route("/")
-def index():
-    return "Home Page"
+def home():
+    recent_invoices = Invoice.select().order_by(Invoice.invoice_id.desc()).limit(5)
+    return render_template("home.html", recent_invoices=recent_invoices)
+
 
 # Naya customer create karne ka form return karega
 @app.route("/new-customer")
