@@ -1,9 +1,24 @@
 {% extends "base.html" %}
 
 {% block body %}
-<ul>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Customer List</h2>
+    <a href="/new-customer" class="btn btn-success">➕ Add New</a>
+</div>
+
+<ul class="list-group">
     {% for customer in customers %}
-        <li>{{ customer.id }}. {{ customer.full_name }} | {{ customer.address }}</li>
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        <span>
+            <strong>{{ customer.id }}.</strong> {{ customer.full_name }} | {{ customer.address }}
+        </span>
+        <span>
+            <a href="/customers/edit/{{ customer.id }}" class="btn btn-sm btn-warning">✏️ Edit</a>
+            <form action="/customers/delete/{{ customer.id }}" method="post" style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">🗑️ Delete</button>
+            </form>
+        </span>
+    </li>
     {% endfor %}
 </ul>
 {% endblock %}

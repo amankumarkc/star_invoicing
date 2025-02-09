@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block body %}
+<h3>Edit Invoice</h3>
+
+<form class="m-5" action="/invoices/edit/{{ invoice.invoice_id }}" method="post">
+    <div class="mb-3">
+        <label for="customer" class="form-label">Customer</label>
+        <input required type="number" name="customer" class="form-control" id="customer" placeholder="Customer ID" value="{{ invoice.customer }}">
+    </div>
+
+    <div class="mb-3">
+        <label for="date" class="form-label">Invoice Date</label>
+        <input required type="date" name="date" class="form-control" id="date" value="{{ invoice.date }}">
+    </div>
+
+    <div>
+        <label>Items</label>
+    </div>
+    <table class="table mb-5">
+        <thead>
+        <tr>
+            <th scope="col">Item Name</th>
+            <th scope="col">Rate</th>
+            <th scope="col">Qty</th>
+            <th scope="col">Total Amount</th>
+            <th scope="col"></th>
+        </tr>
+        </thead>
+        <tbody id="itemsContainer">
+            {% for item in invoice_items %}
+                <tr>
+                    <td>
+                        <input type="hidden" name="item_id" value="{{ item.id }}">
+                        <input required type="text" name="item_name" class="form-control" value="{{ item.item_name }}">
+                    </td>
+                    <td><input required type="number" name="rate" class="form-control" value="{{ item.rate }}"></td>
+                    <td><input required type="number" name="qty" class="form-control" value="{{ item.qty }}"></td>
+                    <td><input required type="number" name="amount" class="form-control" value="{{ item.amount }}" readonly></td>
+                    <td><button type="button" class="btn btn-danger" onclick="removeItem(this)">Delete</button></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+        <caption>
+            <button id="add-item-button" class="btn btn-secondary">Add Item</button>
+        </caption>
+    </table>
+
+    <input hidden name="invoice_items" type="text" id="invoice_items">
+
+    <div class="mb-3">
+        <label for="total_amount" class="form-label">Total Amount</label>
+        <input value="{{ invoice.total_amount }}" readonly required type="number" name="total_amount" class="form-control" id="total_amount">
+    </div>
+
+    <div class="mb-3">
+        <label for="tax_percent" class="form-label">Tax Percent</label>
+        <input value="{{ invoice.tax_percent }}" required type="number" name="tax_percent" class="form-control" id="tax_percent">
+    </div>
+
+    <div class="mb-3">
+        <label for="payable_amount" class="form-label">Payable Amount</label>
+        <input value="{{ invoice.payable_amount }}" readonly required type="number" name="payable_amount" class="form-control" id="payable_amount">
+    </div>
+
+    <div>
+        <input class="btn btn-primary" type="submit" value="Update">
+        <a href="/invoices" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+<!-- Add Item Modal -->
+<div class="modal" id="addItemDialog" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Add Item</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="item-form">
+            <div class="mb-3">
+                <label for="item_name" class="form-label">Item Name</label>
+                <input required type="text" name="item_name" class="form-control" id="item_name">
+            </div>
+
+            <div class="mb-3">
+                <label for="rate" class="form-label">Rate</label>
+                <input required type="number" name="rate" class="form-control" id="rate">
+            </div>
+
+            <div class="mb-3">
+                <label for="qty" class="form-label">Quantity</label>
+                <input required type="number" value="1" name="qty" class="form-control" id="qty">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button id="save-item-button" type="button" class="btn btn-primary">Add</button>
+        </div>
+      </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    let invoiceItems = JSON.parse('{{ invoice_items | tojson | safe }}') || [];
+
+    function populateItems() {
+        const itemsContainer = document.getElementById("itemsContainer");
+        itemsContainer.innerHTML = "";
+        
+        invoiceItems.forEach((item, index) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>
+                    <input type="hidden" name="item_id" value="${item.id || ''}">
+                    <input required type="text" name="item_name" class="form-control" value="${item.item_name}">
+                </td>
+                <td><input required type="number" name="rate" class="form-control rate" value="${item.rate}" data-index="${index}"></td>
+                <td><input required type="number" name="qty" class="form-control qty" value="${item.qty}" data-index="${index}"></td>
+                <td><input required type="number" name="amount" class="form-control amount" value="${item.amount}" readonly></td>
+                <td><button type="button" class="btn btn-danger remove-item" data-index="${index}">Delete</button></td>
+            `;
+            itemsContainer.appendChild(row);
+        });
+
+        attachEventListeners();
+        updateTotalAndPayableAmount();
+    }
+
+    function attachEventListeners() {
+        document.querySelectorAll(".rate, .qty").forEach(input => {
+            input.addEventListener("input", function () {
+                const index = this.dataset.index;
+                const row = this.closest("tr");
+                const rate = parseFloat(row.querySelector(".rate").value) || 0;
+                const qty = parseFloat(row.querySelector(".qty").value) || 0;
+
+                invoiceItems[index].rate = rate;
+                invoiceItems[index].qty = qty;
+                invoiceItems[index].amount = rate * qty;
+                row.querySelector(".amount").value = invoiceItems[index].amount;
+
+                updateTotalAndPayableAmount();
+            });
+        });
+
+        document.querySelectorAll(".remove-item").forEach(button => {
+            button.addEventListener("click", function () {
+                const index = this.dataset.index;
+                invoiceItems.splice(index, 1);
+                populateItems();
+            });
+        });
+    }
+
+    function updateTotalAndPayableAmount() {
+        const totalAmount = invoiceItems.reduce((sum, item) => sum + item.amount, 0);
+        document.getElementById("total_amount").value = totalAmount;
+
+        const taxPercent = parseFloat(document.getElementById("tax_percent").value) || 0;
+        const payableAmount = totalAmount + (totalAmount * taxPercent / 100);
+        document.getElementById("payable_amount").value = payableAmount;
+
+        document.getElementById("invoice_items").value = JSON.stringify(invoiceItems);
+    }
+
+    document.getElementById("tax_percent").addEventListener("input", updateTotalAndPayableAmount);
+
+    document.getElementById("add-item-button").addEventListener("click", function (e) {
+        e.preventDefault();
+        new bootstrap.Modal(document.getElementById('addItemDialog')).show();
+    });
+
+    document.getElementById("save-item-button").addEventListener("click", function () {
+        const itemForm = document.getElementById("item-form");
+        const formData = new FormData(itemForm);
+
+        const newItemName = formData.get("item_name");
+
+        // Check if the item already exists in invoiceItems
+        if (invoiceItems.some(item => item.item_name === newItemName)) {
+            alert("Item already exists! Please enter a different item.");
+            return;
+        }
+
+        const newItem = {
+            id: null,
+            item_name: newItemName,
+            qty: formData.get("qty"),
+            rate: formData.get("rate"),
+            amount: formData.get("qty") * formData.get("rate")
+        };
+
+        invoiceItems.push(newItem);
+        populateItems();
+        document.getElementById("invoice_items").value = JSON.stringify(invoiceItems);
+
+        itemForm.reset();
+        bootstrap.Modal.getInstance(document.getElementById('addItemDialog')).hide();
+        });
+
+
+        document.querySelector("form").addEventListener("submit", function () {
+            document.getElementById("invoice_items").value = JSON.stringify(invoiceItems);
+    });
+
+    window.onload = populateItems;
+</script>
+
+
+{% endblock %}

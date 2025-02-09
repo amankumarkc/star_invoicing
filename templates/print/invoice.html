@@ -1,46 +1,100 @@
 <main>
-    <h1>Invoice {{ invoice.invoice_id }}</h1>
+    <header>
+        <h1>Invoice #{{ invoice.invoice_id }}</h1>
+        <p><strong>Date:</strong> {{ invoice.date }}</p>
+    </header>
 
-    <h2>Customer: {{ invoice.customer.full_name }}</h2>
+    <section class="customer-details">
+        <h2>Bill To:</h2>
+        <p><strong>Name:</strong> {{ invoice.customer.full_name }}</p>
+        <p><strong>Address:</strong> {{ invoice.customer.address }}</p>
+    </section>
 
-    <h3>Address: {{ invoice.customer.address }}</h3>
+    <section class="invoice-items">
+        <h2>Invoice Items</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Quantity</th>
+                    <th>Rate</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in invoice.items %}
+                <tr>
+                    <td>{{ item.item_name }}</td>
+                    <td>{{ item.qty }}</td>
+                    <td>₹{{ item.rate }}</td>
+                    <td>₹{{ item.amount }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
 
-    <h4>Items</h4>
-
-    <ol>
-        {% for item in invoice.items %}
-        <li>
-            {{ item.item_name }} | {{ item.qty  }} * {{ item.rate }} = {{ item.amount }}
-        </li>
-        {% endfor %}
-    </ol>
-
-
-    
-    <p>Total Amount: {{ invoice.total_amount }}</p>
-    <p>Tax: {{ invoice.tax_percent }}%</p>
-
-    <hr>
-
-    <p class="display">Payable Amount: {{ invoice.payable_amount }}</p>
+    <section class="summary">
+        <p><strong>Subtotal:</strong> ₹{{ invoice.total_amount }}</p>
+        <p><strong>Tax ({{ invoice.tax_percent }}%):</strong> ₹{{ invoice.total_amount * invoice.tax_percent / 100 }}</p>
+        <hr>
+        <p class="payable-amount"><strong>Total Payable:</strong> ₹{{ invoice.payable_amount }}</p>
+    </section>
 </main>
-
 
 <style>
     @page {
         size: A4;
-        background-color: beige;
+        margin: 20mm;
     }
 
-
-    h1 {
-        color: #111;
+    body {
+        font-family: "Georgia", serif;
+        color: #333;
+        background: #f8f8f8;
+        margin: 0;
+        padding: 20px;
     }
 
-    .display {
-        font-size: 32px;
+    main {
+        background: #fff;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h1, h2 {
+        color: #222;
+        border-bottom: 2px solid #ddd;
+        padding-bottom: 5px;
+        margin-bottom: 10px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: left;
+    }
+
+    th {
+        background: #f4f4f4;
         font-weight: bold;
-        color: #111;
+    }
+
+    .summary {
+        margin-top: 20px;
+        text-align: right;
+    }
+
+    .payable-amount {
+        font-size: 24px;
+        font-weight: bold;
+        color: #222;
     }
 </style>
-
