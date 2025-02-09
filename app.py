@@ -1,7 +1,7 @@
 import json
 
 # Flask web framework import kiya for handling web requests
-from flask import Flask, render_template, request, redirect, make_response
+from flask import Flask, render_template, request, redirect, make_response, jsonify
 
 # Peewee ORM import kiya SQLite database ko manage karne ke liye
 from peewee import SqliteDatabase
@@ -78,6 +78,22 @@ def delete_customer(id):
     # reset_customer_ids()  # Reset IDs after deletion
     return redirect("/customers")
 
+@app.route("/api/customers", methods=["GET"])
+def get_customers():
+    """
+    API Endpoint to fetch all customers from the database.
+
+    Returns:
+        JSON response containing a list of customers with their IDs and names.
+    """
+    # Retrieve all customer records from the database
+    customers = Customer.select()
+
+    # Convert the customer records into a list of dictionaries with 'id' and 'name'
+    customer_list = [{"id": c.id, "name": c.full_name} for c in customers]
+
+    # Return the list as a JSON response
+    return jsonify(customer_list)
 
 
 # Naya invoice create karne ka form return karega
@@ -91,6 +107,7 @@ def invoices():
     if request.method == "POST":
         # Form data fetch kiya
         data = request.form
+        customer = Customer.get(Customer.id == data["customer"])
         tax_percent = float(data.get("tax_percent"))
 
         # Invoice items ko JSON format se parse kiya
@@ -102,7 +119,8 @@ def invoices():
 
         # Invoice object create kiya aur database me save kiya
         invoice = Invoice(
-            customer=data.get("customer"),
+            customer=customer,
+            # customer=data.get("customer"),
             date=data.get("date"),
             total_amount=total_amount,
             tax_percent=tax_percent,

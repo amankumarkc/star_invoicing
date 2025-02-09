@@ -3,11 +3,59 @@
 {% block body %}
 <h3>Create New Invoice</h3>
 
+<!-- Include autocomp.js -->
+<script src="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js"></script>
+
 <form class="m-5" action="/invoices" method="post">
     <div class="mb-3">
-        <label for="customer" class="form-label">Customer</label>
-        <input required type="number" name="customer" class="form-control" id="customer" placeholder="Customer ID">
+        <label for="customer_name" class="form-label">Customer</label>
+        <input type="text" class="form-control" id="customer_name" placeholder="Search customer..." autocomplete="off">
+        <input type="hidden" name="customer" id="customer"> <!-- Hidden field to store selected customer ID -->
     </div>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Fetch customer data from the API when the page loads
+            fetch("/api/customers")
+            .then(response => response.json()) // Convert response to JSON
+            .then(data => {
+                // Initialize the autocomplete functionality
+                const autoCompleteJS = new autoComplete({
+                    selector: "#customer_name", // Target input field for customer name
+                    placeHolder: "Type customer name...", // Placeholder text
+                    data: {
+                        src: data.map(c => c.name), // Extract customer names from API response
+                        cache: true // Enable caching for faster performance
+                    },
+                    resultsList: {
+                        element: (list, data) => {
+                            // Display a message if no results are found
+                            if (!data.results.length) {
+                                let message = document.createElement("li");
+                                message.innerHTML = "No results found";
+                                list.appendChild(message);
+                            }
+                        },
+                        noResults: true // Ensure "No results found" message appears when needed
+                    },
+                    events: {
+                        input: {
+                            // Handle selection of a customer from the dropdown
+                            selection: event => {
+                                // Find the selected customer object from the API response
+                                const selectedCustomer = data.find(c => c.name === event.detail.selection.value);
+                                if (selectedCustomer) {
+                                    document.querySelector("#customer").value = selectedCustomer.id; // Store customer ID in the hidden input field
+                                    document.querySelector("#customer_name").value = selectedCustomer.name; // Display selected customer name
+                                }
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error("Error fetching customers:", error)); // Handle errors in fetching customer data
+        });
+    </script>
 
     <div class="mb-3">
         <label for="date" class="form-label">Invoice Date</label>

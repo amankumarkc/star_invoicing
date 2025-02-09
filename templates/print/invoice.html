@@ -2,6 +2,7 @@
     <header>
         <h1>Invoice #{{ invoice.invoice_id }}</h1>
         <p><strong>Date:</strong> {{ invoice.date }}</p>
+        <p><strong>ARN:</strong> {{ invoice.gov_arn if invoice.gov_arn else 'Pending' }}</p>
     </header>
 
     <section class="customer-details">
