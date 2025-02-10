@@ -7,7 +7,7 @@ from flask import Flask, render_template, request, redirect, make_response, json
 from peewee import SqliteDatabase
 
 # Models import kiye jo database tables ko represent karenge
-from models import Customer, Invoice, InvoiceItem
+from models import Customer, Invoice, InvoiceItem, db
 
 # PDF generate karne ke liye WeasyPrint import kiya
 from weasyprint import HTML
@@ -127,6 +127,9 @@ def invoices():
             payable_amount=total_amount + (total_amount * tax_percent) / 100,
         )
         invoice.save()
+
+        # Generate ARN and store it
+        invoice.fetch_and_store_arn()
 
         # Invoice items ko save kar rahe hain
         for item in items:
