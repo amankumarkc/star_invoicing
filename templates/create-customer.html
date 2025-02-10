@@ -1,21 +1,31 @@
 {% extends "base.html" %}
 
-
 {% block body %}
-<h2>Create Customer</h2>
-
-<form class="m-5" action="/customers" method="post">
-
-    <div class="mb-3">
-        <label for="full_name" class="form-label">Full Name</label>
-        <input required type="text" name="full_name" class="form-control" id="full_name" placeholder="Full Name">
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Create Customer</h4>
+                </div>
+                <div class="card-body">
+                    <form action="/customers" method="post">
+                        <div class="mb-3">
+                            <label for="full_name" class="form-label">Full Name</label>
+                            <input required type="text" name="full_name" class="form-control" id="full_name" placeholder="Enter full name">
+                        </div>
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Address</label>
+                            <textarea class="form-control" id="address" name="address" rows="3" placeholder="Enter address"></textarea>
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary px-4">Save</button>
+                            <a href="/customers" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="mb-3">
-        <label for="address" class="form-label">Address</label>
-        <textarea class="form-control" id="address" name="address" rows="3"></textarea>
-    </div>
-
-
-    <input class="btn btn-primary" type="submit" value="Save">
-</form>
+</div>
 {% endblock %}
