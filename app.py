@@ -72,20 +72,27 @@ def edit_customer(id):
 def delete_customer(id):
     customer = Customer.get_or_none(Customer.id == id)
     if not customer:
-        return "Customer not found", 404
+        return "Customer not found", 404  # Agar customer nahi mila toh error return karo
 
+    # Is customer se linked saare invoices nikal lo
+    invoices = Invoice.select().where(Invoice.customer == customer)
+
+    # Invoices ke saath linked saare invoice items delete kar do
+    for invoice in invoices:
+        InvoiceItem.delete().where(InvoiceItem.invoice == invoice).execute()
+    
+    # Customer ke saare invoices delete kar do
+    Invoice.delete().where(Invoice.customer == customer).execute()
+
+    # Last me customer ko bhi delete kar do
     customer.delete_instance()
-    # reset_customer_ids()  # Reset IDs after deletion
-    return redirect("/customers")
+
+    return redirect("/customers")  # Customers list page par redirect kar do
+
 
 @app.route("/api/customers", methods=["GET"])
 def get_customers():
-    """
-    API Endpoint to fetch all customers from the database.
-
-    Returns:
-        JSON response containing a list of customers with their IDs and names.
-    """
+    
     # Retrieve all customer records from the database
     customers = Customer.select()
 
