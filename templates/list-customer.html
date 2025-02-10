@@ -28,7 +28,7 @@
                         <form action="/customers/delete/{{ customer.id }}" method="post" class="d-inline">
                             <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this customer?')">🗑️ Delete</button>
                         </form>
-                        <a href="/new-invoice?customer_id={{ customer.id }}&customer_name={{ customer.full_name | urlencode }}" 
+                        <a href="/new-invoice?customer_id={{ customer.id }}" 
                             class="btn btn-primary btn-sm">📝 Create Invoice</a>
                     </td>
                 </tr>

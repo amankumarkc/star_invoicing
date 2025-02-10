@@ -22,11 +22,16 @@
                 // Get URL parameters
                 const urlParams = new URLSearchParams(window.location.search);
                 const customerId = urlParams.get("customer_id");
-                const customerName = urlParams.get("customer_name");
+                const customerNameInput = document.querySelector("#customer_name");
 
-                if (customerId && customerName) {
-                    document.querySelector("#customer_name").value = decodeURIComponent(customerName);
-                    document.querySelector("#customer").value = customerId;
+                if (customerId) {
+                    const selectedCustomer = data.find(c => c.id.toString() === customerId);
+                    if (selectedCustomer) {
+                        customerNameInput.value = selectedCustomer.name;
+                        document.querySelector("#customer").value = customerId;
+                        customerNameInput.readOnly = true;  // Make input readonly
+                        return; // Exit early to not initialize autocomplete
+                    }
                 }
                 // Initialize the autocomplete functionality
                 const autoCompleteJS = new autoComplete({
