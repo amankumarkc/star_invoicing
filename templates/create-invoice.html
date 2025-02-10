@@ -19,6 +19,15 @@
             fetch("/api/customers")
             .then(response => response.json()) // Convert response to JSON
             .then(data => {
+                // Get URL parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                const customerId = urlParams.get("customer_id");
+                const customerName = urlParams.get("customer_name");
+
+                if (customerId && customerName) {
+                    document.querySelector("#customer_name").value = decodeURIComponent(customerName);
+                    document.querySelector("#customer").value = customerId;
+                }
                 // Initialize the autocomplete functionality
                 const autoCompleteJS = new autoComplete({
                     selector: "#customer_name", // Target input field for customer name
