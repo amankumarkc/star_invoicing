@@ -1,34 +1,24 @@
 import json
-
-# Flask web framework import kiya for handling web requests
 from flask import Flask, render_template, request, redirect, make_response, jsonify
-
-# Peewee ORM import kiya SQLite database ko manage karne ke liye
 from peewee import SqliteDatabase
-
-# Models import kiye jo database tables ko represent karenge
 from models import Customer, Invoice, InvoiceItem, db
-
-# PDF generate karne ke liye WeasyPrint import kiya
 from weasyprint import HTML
-
 
 # Flask ka ek app instance banaya
 app = Flask(__name__)
 
-# SQLite database ka connection create kiya aur tables initialize kiye
+# SQLite database initialize kiya
 # "invoices.db" naam ka database use ho raha hai
 # Tables -> Customer, Invoice, InvoiceItem
 
 db = SqliteDatabase("invoices.db")
 db.create_tables([Customer, Invoice, InvoiceItem])
 
-# Root route define kiya jo "Home Page" return karega
+# Home Page route
 @app.route("/")
 def home():
     recent_invoices = Invoice.select().order_by(Invoice.invoice_id.desc()).limit(5)
     return render_template("home.html", recent_invoices=recent_invoices)
-
 
 # Naya customer create karne ka form return karega
 @app.route("/new-customer")
@@ -39,25 +29,20 @@ def create_customer_form():
 @app.route("/customers", methods=["POST", "GET"])
 def customers():
     if request.method == "POST":
-        # Form se customer ka naam aur address fetch kiya
         full_name = request.form.get("full_name")
         address = request.form.get("address")
-
-        # Customer object create kiya aur database me save kiya
-        customer = Customer(full_name=full_name, address=address)
-        customer.save()
-        return redirect("/customers")  # Customer list page pe redirect kiya
-    else:
-        # Agar GET request hai to sabhi customers ko fetch kar ke list me bheja
-        customers = Customer.select()
-        return render_template("list-customer.html", customers=customers)
+        Customer.create(full_name=full_name, address=address)  # Customer save kiya
+        return redirect("/customers")
     
+    customers = Customer.select()
+    return render_template("list-customer.html", customers=customers)
 
+# Customer edit karne ka route
 @app.route("/customers/edit/<int:id>", methods=["GET", "POST"])
 def edit_customer(id):
     customer = Customer.get_or_none(Customer.id == id)
     if not customer:
-        return "Customer not found", 404  # Return 404 if customer doesn't exist
+        return "Customer not found", 404
     
     if request.method == "POST":
         customer.full_name = request.form["full_name"]
@@ -67,41 +52,27 @@ def edit_customer(id):
 
     return render_template("edit-customer.html", customer=customer)
 
-
+# Customer delete karne ka route
 @app.route("/customers/delete/<int:id>", methods=["POST"])
 def delete_customer(id):
     customer = Customer.get_or_none(Customer.id == id)
     if not customer:
-        return "Customer not found", 404  # Agar customer nahi mila toh error return karo
-
-    # Is customer se linked saare invoices nikal lo
+        return "Customer not found", 404
+    
+    # Customer ke saath linked invoices aur unke items delete karna
     invoices = Invoice.select().where(Invoice.customer == customer)
-
-    # Invoices ke saath linked saare invoice items delete kar do
     for invoice in invoices:
         InvoiceItem.delete().where(InvoiceItem.invoice == invoice).execute()
-    
-    # Customer ke saare invoices delete kar do
     Invoice.delete().where(Invoice.customer == customer).execute()
-
-    # Last me customer ko bhi delete kar do
     customer.delete_instance()
+    
+    return redirect("/customers")
 
-    return redirect("/customers")  # Customers list page par redirect kar do
-
-
+# API: Customers ka JSON return karega
 @app.route("/api/customers", methods=["GET"])
 def get_customers():
-    
-    # Retrieve all customer records from the database
     customers = Customer.select()
-
-    # Convert the customer records into a list of dictionaries with 'id' and 'name'
-    customer_list = [{"id": c.id, "name": c.full_name} for c in customers]
-
-    # Return the list as a JSON response
-    return jsonify(customer_list)
-
+    return jsonify([{ "id": c.id, "name": c.full_name } for c in customers])
 
 # Naya invoice create karne ka form return karega
 @app.route("/new-invoice")
@@ -112,132 +83,105 @@ def create_invoice_form():
 @app.route("/invoices", methods=["GET", "POST"])
 def invoices():
     if request.method == "POST":
-        # Form data fetch kiya
         data = request.form
         customer = Customer.get(Customer.id == data["customer"])
         tax_percent = float(data.get("tax_percent"))
-
-        # Invoice items ko JSON format se parse kiya
-        items_json = data.get("invoice_items")
-        items = json.loads(items_json)
-
-         # Compute total amount (sum of all item amounts)
+        items = json.loads(data.get("invoice_items"))
+        
+        # Total amount calculate kiya
         total_amount = sum(int(item["qty"]) * float(item["rate"]) for item in items)
-
-        # Invoice object create kiya aur database me save kiya
-        invoice = Invoice(
+        payable_amount = total_amount + (total_amount * tax_percent) / 100
+        
+        # Invoice save kiya
+        invoice = Invoice.create(
             customer=customer,
-            # customer=data.get("customer"),
             date=data.get("date"),
             total_amount=total_amount,
             tax_percent=tax_percent,
-            payable_amount=total_amount + (total_amount * tax_percent) / 100,
+            payable_amount=payable_amount,
         )
-        invoice.save()
-
-        # Generate ARN and store it
         invoice.fetch_and_store_arn()
-
-        # Invoice items ko save kar rahe hain
+        
+        # Invoice items save kiya
         for item in items:
-            InvoiceItem(
+            InvoiceItem.create(
                 invoice=invoice,
                 item_name=item.get("item_name"),
                 qty=item.get("qty"),
                 rate=item.get("rate"),
                 amount=int(item.get("qty")) * float(item.get("rate"))
-            ).save()
-
-        return redirect("/invoices")  # Invoice list page pe redirect kar rahe hain
-    else:
-        # GET request ke liye sabhi invoices ko fetch kar ke list bhej rahe hain
-        return render_template("list-invoice.html", invoices=Invoice.select())
+            )
+        
+        return redirect("/invoices")
     
-# Edit invoice form
+    return render_template("list-invoice.html", invoices=Invoice.select())
+
+# Invoice edit karne ka route
 @app.route("/invoices/edit/<int:id>", methods=["GET", "POST"])
 def edit_invoice(id):
-    invoice = Invoice.get_by_id(id)  # Fetch the invoice
-    invoice_items = list(InvoiceItem.select().where(InvoiceItem.invoice == id).dicts())  # Convert to list of dicts
+    invoice = Invoice.get_by_id(id)
+    invoice_items = list(InvoiceItem.select().where(InvoiceItem.invoice == id).dicts())
 
     if request.method == "POST":
         data = request.form
         invoice.customer = data.get("customer")
         invoice.date = data.get("date")
         invoice.tax_percent = float(data.get("tax_percent"))
-
-        # Get updated items from form
-        items_json = data.get("invoice_items")
-        items = json.loads(items_json)
-
-        # Compute new total amount
+        items = json.loads(data.get("invoice_items"))
+        
         total_amount = sum(int(item["qty"]) * float(item["rate"]) for item in items)
         invoice.total_amount = total_amount
-        invoice.payable_amount = invoice.total_amount + (invoice.total_amount * invoice.tax_percent) / 100
+        invoice.payable_amount = total_amount + (total_amount * invoice.tax_percent) / 100
         invoice.save()
 
-        # Fetch existing items from DB for comparison
-        existing_items = {item.id: item for item in InvoiceItem.select().where(InvoiceItem.invoice == invoice)}      
-
-        # Track updated items
+        existing_items = {item.id: item for item in InvoiceItem.select().where(InvoiceItem.invoice == invoice)}
         updated_item_ids = set()
 
         for item in items:
-            item_id = item.get("id")  # Check if item already has an ID
+            item_id = item.get("id")
             if item_id and int(item_id) in existing_items:
-                # Update existing item
                 existing_item = existing_items[int(item_id)]
                 existing_item.item_name = item["item_name"]
                 existing_item.qty = item["qty"]
                 existing_item.rate = item["rate"]
-                existing_item.amount = int(item.get("qty")) * float(item.get("rate"))
+                existing_item.amount = int(item["qty"]) * float(item["rate"])
                 existing_item.save()
                 updated_item_ids.add(int(item_id))
             else:
-                # Create new item
                 new_item = InvoiceItem.create(
                     invoice=invoice,
                     item_name=item["item_name"],
                     qty=item["qty"],
                     rate=item["rate"],
-                    amount= int(item.get("qty")) * float(item.get("rate"))
+                    amount=int(item["qty"]) * float(item["rate"])
                 )
                 updated_item_ids.add(new_item.id)
 
-        # Delete items that were removed from the form
         for item_id in existing_items:
             if item_id not in updated_item_ids:
                 existing_items[item_id].delete_instance()
 
-        return redirect("/invoices")  # Redirect to invoice list
+        return redirect("/invoices")
 
     return render_template("edit-invoice.html", invoice=invoice, invoice_items=invoice_items)
 
-
-
-# Delete invoice
+# Invoice delete karne ka route
 @app.route("/invoices/delete/<int:id>", methods=["POST"])
 def delete_invoice(id):
     invoice = Invoice.get_by_id(id)
-    InvoiceItem.delete().where(InvoiceItem.invoice == invoice).execute()  # Automatically delete items
+    InvoiceItem.delete().where(InvoiceItem.invoice == invoice).execute()
     invoice.delete_instance()
     return redirect("/invoices")
 
-
-# Invoice ka PDF download karne ka route
+# Invoice PDF download karne ka route
 @app.route("/download/<int:invoice_id>")
 def download_pdf(invoice_id):
-    # Invoice ko database se fetch kiya uske ID ke basis pe
     invoice = Invoice.get_by_id(invoice_id)
-
-    # Invoice ka HTML template render kiya aur PDF generate kiya
     html = HTML(string=render_template("print/invoice.html", invoice=invoice))
     response = make_response(html.write_pdf())
-
-    # Response ka Content-Type PDF set kiya
     response.headers["Content-Type"] = "application/pdf"
-
-    # User ko PDF send kiya
     return response
+
 
 
 # Reset Customer ID
