@@ -3,6 +3,7 @@ from flask import Flask, render_template, request, redirect, make_response, json
 from peewee import SqliteDatabase
 from models import Customer, Invoice, InvoiceItem, db
 from weasyprint import HTML
+from services import generate_arn
 
 # Flask ka ek app instance banaya
 app = Flask(__name__)
@@ -100,8 +101,12 @@ def invoices():
             tax_percent=tax_percent,
             payable_amount=payable_amount,
         )
-        invoice.fetch_and_store_arn()
-        
+        # invoice.fetch_and_store_arn()
+
+        arn = generate_arn(customer.full_name, invoice.invoice_id, payable_amount)
+        invoice.gov_arn = arn   
+        invoice.save()
+                
         # Invoice items save kiya
         for item in items:
             InvoiceItem.create(

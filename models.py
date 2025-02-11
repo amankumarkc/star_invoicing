@@ -1,6 +1,4 @@
 from peewee import Model, CharField, TextField, SqliteDatabase, DateField, FloatField, ForeignKeyField, AutoField, IntegerField
-import requests, logging, json
-from services import generate_arn
 
 # SQLite database ka connection banaya jo "invoices.db" naam se store hoga
 db = SqliteDatabase("invoices.db")
@@ -26,11 +24,7 @@ class Invoice(Model):
     class Meta:
         database = db  # Is model ka data "invoices.db" database me store hoga
 
-    def fetch_and_store_arn(self):
-        """Fetch ARN using external API and save it in the database."""
-        self.gov_arn = generate_arn(self.customer.full_name, self.invoice_id, self.payable_amount)
-        self.save()  # Save ARN in database
-
+    
 # InvoiceItem model create kiya jo ek invoice ke andar items ko store karega
 class InvoiceItem(Model):
     item_name = CharField(200, unique=True)  # Item ka naam, unique hoga
